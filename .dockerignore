@@ -1,0 +1,11 @@
+# The build only needs the package itself; everything else arrives through the
+# bind mount at run time. Keeping the context small also keeps rebuilds fast.
+.git/
+.pytest_cache/
+__pycache__/
+*.egg-info/
+build/
+dist/
+docs/
+problems/
+examples/

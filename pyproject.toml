@@ -1,0 +1,25 @@
+[project]
+name = "terasering"
+version = "0.1.0"
+description = "Partial-point judge for ICPC-style Codeforces problems"
+readme = "README.md"
+requires-python = ">=3.11"
+dependencies = []
+
+[project.optional-dependencies]
+dev = ["pytest>=8"]
+
+[project.scripts]
+teras = "terasering.cli:main"
+
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+# Without this, setuptools mistakes the problems/ directory for a package.
+[tool.setuptools]
+packages = ["terasering"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+markers = ["slow: invokes the compiler and runs code"]

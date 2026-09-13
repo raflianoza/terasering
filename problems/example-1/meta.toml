@@ -1,0 +1,8 @@
+id = "example-1"
+time_limit_ms = 1000
+memory_limit_mb = 256
+ 
+[subtasks]
+"01-small" = 20
+"02-large" = 30
+ 
