@@ -25,7 +25,7 @@ import urllib.parse
 import urllib.request
 from dataclasses import dataclass, field
 from enum import Enum
-from typing import Any, Callable
+from typing import Any, Callable, Iterator
 
 from .errors import TeraseringError
 from .models import Problem
@@ -127,30 +127,46 @@ class CodeforcesClient:
         payload = self._call(f"{API_URL}?{query}")
         return [_parse_submission(item) for item in payload]
 
-    def find(self, handle: str, submission_id: int) -> CodeforcesSubmission | None:
-        """Page backwards through a user's history looking for one submission.
+    def history(self, handle: str) -> Iterator[CodeforcesSubmission]:
+        """Walk a user's submissions newest first, one page at a time.
 
-        Returns None once the history runs out or `max_pages` is reached.
+        Stops when the history runs out or `max_pages` is reached, so a lookup
+        never turns into an unbounded crawl.
         """
         for page in range(self.max_pages):
-            start = page * self.page_size + 1
-            batch = self.recent(handle, start=start)
+            batch = self.recent(handle, start=page * self.page_size + 1)
             if not batch:
-                return None
-            for submission in batch:
-                if submission.id == submission_id:
-                    return submission
-        return None
+                return
+            yield from batch
+
+    def find(self, handle: str, submission_id: int) -> CodeforcesSubmission | None:
+        """Look for one submission by id."""
+        return next(
+            (s for s in self.history(handle) if s.id == submission_id), None
+        )
+
+    def find_accepted(
+        self, handle: str, contest_id: int, index: str
+    ) -> CodeforcesSubmission | None:
+        """Return the most recent accepted submission for one problem.
+
+        Newest first, so a participant who fixed a solution gets credit for
+        the fix rather than an earlier failed attempt.
+        """
+        return next(
+            (
+                s
+                for s in self.history(handle)
+                if s.accepted and s.solves(contest_id, index)
+            ),
+            None,
+        )
 
     def verify(
         self, handle: str, submission_id: int, problem: Problem
     ) -> ClaimResult:
         """Check a claimed submission against the problem it should solve."""
-        if problem.cf_contest_id is None or problem.cf_index is None:
-            raise CodeforcesError(
-                f"problem {problem.id!r} has no cf_contest_id and cf_index in "
-                f"meta.toml, so a claim cannot be checked against it"
-            )
+        contest_id, index = _problem_ids(problem)
 
         submission = self.find(handle, submission_id)
         if submission is None:
@@ -168,12 +184,12 @@ class CodeforcesClient:
                 submission,
             )
 
-        if not submission.solves(problem.cf_contest_id, problem.cf_index):
+        if not submission.solves(contest_id, index):
             return ClaimResult(
                 ClaimStatus.WRONG_PROBLEM,
                 f"submission {submission_id} targets "
                 f"{submission.contest_id}{submission.index}, expected "
-                f"{problem.cf_contest_id}{problem.cf_index}",
+                f"{contest_id}{index}",
                 submission,
             )
 
@@ -195,6 +211,29 @@ class CodeforcesClient:
         return ClaimResult(
             ClaimStatus.ACCEPTED,
             f"submission {submission_id} is accepted "
+            f"({submission.time_ms} ms, {submission.memory_kb // 1024} MB)",
+            submission,
+        )
+
+    def verify_latest(self, handle: str, problem: Problem) -> ClaimResult:
+        """Find a participant's accepted submission without being told its id.
+
+        Saves looking the id up by hand, which is the slowest part of grading
+        a whole class.
+        """
+        contest_id, index = _problem_ids(problem)
+
+        submission = self.find_accepted(handle, contest_id, index)
+        if submission is None:
+            return ClaimResult(
+                ClaimStatus.NOT_FOUND,
+                f"no accepted submission for {contest_id}{index} "
+                f"under handle {handle!r}",
+            )
+
+        return ClaimResult(
+            ClaimStatus.ACCEPTED,
+            f"found submission {submission.id} "
             f"({submission.time_ms} ms, {submission.memory_kb // 1024} MB)",
             submission,
         )
@@ -221,6 +260,15 @@ class CodeforcesClient:
         elapsed = time.monotonic() - self._last_call
         if elapsed < self.min_interval_s:
             time.sleep(self.min_interval_s - elapsed)
+
+
+def _problem_ids(problem: Problem) -> tuple[int, str]:
+    if problem.cf_contest_id is None or problem.cf_index is None:
+        raise CodeforcesError(
+            f"problem {problem.id!r} has no cf_contest_id and cf_index in "
+            f"meta.toml, so a claim cannot be checked against it"
+        )
+    return problem.cf_contest_id, problem.cf_index
 
 
 def _parse_submission(item: dict[str, Any]) -> CodeforcesSubmission:

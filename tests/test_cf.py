@@ -203,3 +203,62 @@ class TestApiErrors:
         client = client_returning([])
         client.recent("a b&c")
         assert "handle=a+b%26c" in client.calls[0]
+
+
+class TestFindAccepted:
+    def test_finds_the_accepted_submission_without_an_id(self, problem):
+        client = client_returning([submission(id=700)])
+        result = client.verify_latest(HANDLE, problem)
+
+        assert result.accepted
+        assert result.submission.id == 700
+        assert "found submission 700" in result.detail
+
+    def test_prefers_the_newest_accepted_attempt(self, problem):
+        # The API returns newest first, so a later fix wins over an earlier one.
+        client = client_returning(
+            [submission(id=900), submission(id=100)]
+        )
+        assert client.verify_latest(HANDLE, problem).submission.id == 900
+
+    def test_skips_failed_attempts(self, problem):
+        client = client_returning(
+            [
+                submission(id=900, verdict="WRONG_ANSWER"),
+                submission(id=800, verdict="TIME_LIMIT_EXCEEDED"),
+                submission(id=700),
+            ]
+        )
+        assert client.verify_latest(HANDLE, problem).submission.id == 700
+
+    def test_skips_accepted_submissions_to_other_problems(self, problem):
+        client = client_returning(
+            [submission(id=900, contest_id=999, index="A"), submission(id=700)]
+        )
+        assert client.verify_latest(HANDLE, problem).submission.id == 700
+
+    def test_reports_when_nothing_is_accepted(self, problem):
+        client = client_returning([submission(id=900, verdict="WRONG_ANSWER")])
+        result = client.verify_latest(HANDLE, problem)
+
+        assert result.status is ClaimStatus.NOT_FOUND
+        assert not result.accepted
+        assert "1234B" in result.detail
+
+    def test_searches_across_pages(self, problem):
+        client = client_returning(
+            [submission(id=900, verdict="WRONG_ANSWER")],
+            [submission(id=700)],
+            page_size=1,
+        )
+        assert client.verify_latest(HANDLE, problem).submission.id == 700
+
+    def test_problem_without_codeforces_metadata(self, problem, tmp_path):
+        (tmp_path / "meta.toml").write_text(
+            META.replace(f"cf_contest_id = {CONTEST_ID}", "").replace(
+                f'cf_index = "{INDEX}"', ""
+            )
+        )
+        bare = load_problem(tmp_path)
+        with pytest.raises(CodeforcesError, match="no cf_contest_id"):
+            client_returning([submission()]).verify_latest(HANDLE, bare)

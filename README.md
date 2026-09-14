@@ -6,14 +6,12 @@ In ICPC-style contests, a problem is usually pass-or-fail: either your solution 
 
 You can prepare small local test cases grouped into subtasks, then use an accepted Codeforces submission as the final full-score tier. This makes it possible to give meaningful partial credit without having to recreate the full Codeforces test set yourself.
 
-The name comes from *terasering*, or terraced rice fields, each subtask is another step upward.
+The name comes from *terasering*, or terraced rice fields: each subtask is another step upward.
 
 ```bash
 teras gen problems/1234B model.cpp
 
-teras run problems/1234B student.cpp \
-  --cf-submission 285736291 \
-  --cf-handle alice
+teras run problems/1234B student.cpp --cf-handle alice
 ```
 
 Example output:
@@ -25,7 +23,7 @@ Example output:
 
 local score : 20/50
 peak time   : 2530 ms
-codeforces  : ACCEPTED - submission 285736291 is accepted (342 ms, 8 MB)
+codeforces  : ACCEPTED - found submission 285736291 (342 ms, 8 MB)
 final score : 100/100
 
 [instructor review] TLE: Ran out of time here only. Usually just a slower
@@ -96,18 +94,24 @@ Run and score a submission:
 teras run problems/1234B solution.cpp
 ```
 
-You can also verify an existing Codeforces submission:
+Give a handle and `terasering` finds that person's accepted submission for the problem by itself:
+
+```bash
+teras run problems/1234B solution.cpp --cf-handle alice
+```
+
+It searches their submission history newest first, so a later fix counts rather than an earlier failed attempt. If you would rather check one specific submission, name it:
 
 ```bash
 teras run problems/1234B solution.cpp \
-  --cf-submission 285736291 \
-  --cf-handle alice
+  --cf-handle alice \
+  --cf-submission 285736291
 ```
 
 | Option               | Description                                                           |
 | -------------------- | --------------------------------------------------------------------- |
-| `--cf-submission ID` | Verify a submission using the public Codeforces API                   |
-| `--cf-handle HANDLE` | Codeforces handle that owns the submission                            |
+| `--cf-handle HANDLE` | Look up this handle's accepted submission for the problem             |
+| `--cf-submission ID` | Check one specific submission instead of searching for it             |
 | `--cf-ac`            | Treat the solution as accepted on Codeforces without querying the API |
 | `--all-tests`        | Keep running tests after a subtask has already failed                 |
 | `--time-limit MS`    | Override the time limit from `meta.toml`                              |
@@ -116,7 +120,7 @@ teras run problems/1234B solution.cpp \
 
 Codeforces verification does not require login credentials.
 
-When checking a submission, `terasering` verifies four things:
+When a submission id is given explicitly, `terasering` verifies four things:
 
 1. the submission exists,
 2. it belongs to the claimed handle,
@@ -345,7 +349,7 @@ Run the full suite:
 pytest
 ```
 
-There are currently 91 tests.
+There are currently 98 tests.
 
 To skip tests that actually invoke the compiler:
 

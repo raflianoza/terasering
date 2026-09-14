@@ -48,15 +48,15 @@ def _build_parser() -> argparse.ArgumentParser:
         help="assert the Codeforces verdict instead of checking it",
     )
     run.add_argument(
+        "--cf-handle",
+        metavar="HANDLE",
+        help="look up this handle's accepted submission for the problem",
+    )
+    run.add_argument(
         "--cf-submission",
         type=int,
         metavar="ID",
-        help="verify this Codeforces submission id against the public API",
-    )
-    run.add_argument(
-        "--cf-handle",
-        metavar="HANDLE",
-        help="Codeforces handle that owns --cf-submission",
+        help="check one specific submission instead of searching for it",
     )
     run.add_argument(
         "--all-tests",
@@ -148,12 +148,17 @@ def _run(args: argparse.Namespace) -> int:
 
 
 def _check_claim(problem: Problem, args: argparse.Namespace) -> ClaimResult | None:
-    """Verify a claimed Codeforces submission, if one was given."""
-    if args.cf_submission is None:
-        return None
+    """Resolve the Codeforces side of the score, if a handle was given."""
     if not args.cf_handle:
-        raise TeraseringError("--cf-submission also needs --cf-handle")
-    return CodeforcesClient().verify(args.cf_handle, args.cf_submission, problem)
+        if args.cf_submission is not None:
+            raise TeraseringError("--cf-submission also needs --cf-handle")
+        return None
+
+    client = CodeforcesClient()
+    if args.cf_submission is None:
+        # No id given, so find the accepted submission ourselves.
+        return client.verify_latest(args.cf_handle, problem)
+    return client.verify(args.cf_handle, args.cf_submission, problem)
 
 
 def _gen(args: argparse.Namespace) -> int:
