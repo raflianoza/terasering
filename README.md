@@ -9,6 +9,7 @@ You can prepare small local test cases grouped into subtasks, then use an accept
 The name comes from *terasering*, or terraced rice fields: each subtask is another step upward.
 
 ```bash
+teras new problems/1234B --cf 1234/B
 teras gen problems/1234B model.cpp
 
 teras run problems/1234B student.cpp --cf-handle alice
@@ -85,6 +86,26 @@ The local score is always preserved. If a submission fails some local tests but 
 This is useful because, in practice, an accepted Codeforces solution failing locally often means the local answer key is wrong rather than the contestant's solution.
 
 ## Commands
+
+### `teras new`
+
+Create a problem skeleton:
+
+```bash
+teras new problems/1234B --cf 1234/B --subtasks small:20,medium:30
+```
+
+This writes `meta.toml` and one directory per subtask, with the names in both places guaranteed to match. `--cf` accepts a full problem URL as well, so there is no need to work out which half of the URL is the contest id.
+
+| Option              | Description                                                     |
+| ------------------- | --------------------------------------------------------------- |
+| `--cf REF`          | Codeforces problem, as `1234/B` or a problem URL                |
+| `--subtasks SPEC`   | Comma separated `label:points` (default: `small:20,medium:30`)   |
+| `--time-limit MS`   | Time limit to write into `meta.toml`                            |
+| `--memory-limit MB` | Memory limit to write into `meta.toml`                          |
+| `--checker NAME`    | Checker to write into `meta.toml`                               |
+
+Labels are numbered automatically in the order given, since subtasks run in directory order. Nothing is created if any argument is rejected, and an existing directory is never touched.
 
 ### `teras run`
 
@@ -269,9 +290,10 @@ The package is split into small modules with fairly clear responsibilities:
 | `loader.py`    | Loading problems from disk                              |
 | `judge.py`     | Compile, execute, and score submissions                 |
 | `generator.py` | Generate answer keys from a model solution              |
+| `scaffold.py`  | Create new problem skeletons                            |
 | `scoring.py`   | Pure scoring and diagnosis logic                        |
 | `cf.py`        | Codeforces submission verification                      |
-| `cli.py`       | Implementation of `teras run` and `teras gen`           |
+| `cli.py`       | Implementation of `teras new`, `run`, and `gen`          |
 
 `models.py` intentionally does not import anything else from the package, which helps keep dependencies between modules predictable.
 
@@ -349,7 +371,7 @@ Run the full suite:
 pytest
 ```
 
-There are currently 98 tests.
+There are currently 129 tests.
 
 To skip tests that actually invoke the compiler:
 
