@@ -1,0 +1,15 @@
+id = "example-spread"
+
+# Needed to verify Codeforces submissions. From the problem URL:
+#   /contest/1234/problem/B
+# cf_contest_id = 1234
+# cf_index = "B"
+
+time_limit_ms = 1000
+memory_limit_mb = 256
+
+checker = "exact"
+
+[subtasks]
+"01-small" = 20
+"02-large" = 30

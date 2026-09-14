@@ -1,9 +1,0 @@
-id = "474B"
-time_limit_ms = 1000
-memory_limit_mb = 256
-cf_contest_id = 474
-cf_index = "B"
-
-[subtasks]
-"01-open" = 20
-"02-mudah" = 30

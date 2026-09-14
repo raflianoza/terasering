@@ -1,8 +1,0 @@
-id = "example-2"
-time_limit_ms = 1000
-memory_limit_mb = 256
- 
-[subtasks]
-"01-small" = 15
-"02-same" = 5
-"03-large" = 30

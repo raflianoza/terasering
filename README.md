@@ -60,6 +60,20 @@ docker run --rm -it -v "$PWD":/work terasering
 
 The package itself uses only the Python standard library.
 
+## Try it
+
+The repository ships with one example problem and three solutions to it, so the behaviour can be seen before writing anything:
+
+```bash
+teras run problems/example-spread examples/spread_linear.cpp     # 50/50
+teras run problems/example-spread examples/spread_pairwise.cpp   # 20/50, too slow
+teras run problems/example-spread examples/spread_zero_init.cpp  # 30/50, wrong
+```
+
+The problem is `max(a) - min(a)`. The three scores show what the subtasks are for: a correct solution passes everything, an `O(n²)` one runs out of time on the large subtask, and one that mishandles an edge case fails the small subtask while passing the large one. The last pattern is the useful one — a low score on small inputs points at correctness, a low score on large inputs points at complexity.
+
+`examples/rebuild_example_problem.sh` regenerates the problem from scratch, and doubles as a worked example of `teras new` and `teras gen`.
+
 ## How scoring works
 
 The scoring rule is intentionally simple:
