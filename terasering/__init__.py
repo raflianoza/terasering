@@ -24,6 +24,7 @@ from .models import (
     Verdict,
 )
 from .sandbox import RlimitSandbox
+from .scaffold import SubtaskSpec, create_problem, parse_problem_ref, parse_subtasks
 from .scoring import Mismatch, diagnose, effective_score
 
 __version__ = "0.1.0"
@@ -47,6 +48,7 @@ __all__ = [
     "RlimitSandbox",
     "SandboxError",
     "SubmissionOutcome",
+    "SubtaskSpec",
     "Subtask",
     "SubtaskOutcome",
     "TeraseringError",
@@ -56,8 +58,11 @@ __all__ = [
     "ToolchainError",
     "Verdict",
     "build_checker",
+    "create_problem",
     "diagnose",
     "effective_score",
     "generate",
     "load_problem",
+    "parse_problem_ref",
+    "parse_subtasks",
 ]

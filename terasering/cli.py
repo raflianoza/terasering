@@ -3,6 +3,7 @@
     teras run problems/1234B solution.cpp
     teras run problems/1234B solution.cpp --cf-ac --all-tests
     teras gen problems/1234B model.cpp
+    teras new problems/1234B --cf 1234/B
 """
 
 from __future__ import annotations
@@ -18,6 +19,13 @@ from .generator import GeneratedCase, generate
 from .judge import Judge
 from .loader import load_problem
 from .models import TOTAL_POINTS, Limits, Problem, SubmissionOutcome
+from .scaffold import (
+    DEFAULT_CHECKER,
+    DEFAULT_MEMORY_LIMIT_MB,
+    DEFAULT_SUBTASKS,
+    DEFAULT_TIME_LIMIT_MS,
+    create_problem,
+)
 from .scoring import diagnose, effective_score
 
 
@@ -112,6 +120,28 @@ def _build_parser() -> argparse.ArgumentParser:
     )
     gen.set_defaults(handler=_gen)
 
+    new = subparsers.add_parser("new", help="create a problem skeleton")
+    new.add_argument("path", type=Path, help="directory to create")
+    new.add_argument(
+        "--cf",
+        metavar="REF",
+        help="Codeforces problem, as 474/B or a problem URL",
+    )
+    new.add_argument(
+        "--subtasks",
+        default=DEFAULT_SUBTASKS,
+        metavar="SPEC",
+        help=f"comma separated label:points (default: {DEFAULT_SUBTASKS})",
+    )
+    new.add_argument(
+        "--time-limit", type=int, default=DEFAULT_TIME_LIMIT_MS, metavar="MS"
+    )
+    new.add_argument(
+        "--memory-limit", type=int, default=DEFAULT_MEMORY_LIMIT_MB, metavar="MB"
+    )
+    new.add_argument("--checker", default=DEFAULT_CHECKER)
+    new.set_defaults(handler=_new)
+
     return parser
 
 
@@ -203,6 +233,30 @@ def _print_gen_summary(cases: list[GeneratedCase]) -> None:
         print("re-run with --force to overwrite the keys that were kept")
     for case in blocked:
         print(f"  {case.test.name}: {case.reason}")
+
+
+def _new(args: argparse.Namespace) -> int:
+    root, subtasks = create_problem(
+        args.path,
+        subtasks=args.subtasks,
+        reference=args.cf,
+        time_limit_ms=args.time_limit,
+        memory_limit_mb=args.memory_limit,
+        checker=args.checker,
+    )
+
+    total = sum(subtask.points for subtask in subtasks)
+    print(f"created {root}/")
+    print(f"  meta.toml")
+    for subtask in subtasks:
+        print(f"  subtasks/{subtask.label}/  ({subtask.points} points)")
+    print()
+    print(f"{total} points from local subtasks, "
+          f"the rest from an accepted Codeforces submission")
+    print()
+    print("next: add .in files, then")
+    print(f"  teras gen {root} model.cpp")
+    return 0
 
 
 def _print_header(problem: Problem, time_limit_override: int | None) -> None:
