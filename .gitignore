@@ -17,5 +17,9 @@ dist/
 # macOS
 .DS_Store
 
+# Problem
+problems/*
+!problems/example-*
+
 # Student submissions are their work, not repo content
 submissions/
